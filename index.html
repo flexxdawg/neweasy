@@ -4,90 +4,149 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>EasyHelp</title>
-
-  <!-- ─── Google Fonts ─────────────────────────────────────── -->
+  <link rel="icon" type="image/png" sizes="32x32" href="images/fav.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/fav.png">
+  <link rel="shortcut icon" href="images/fav.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  
 
-  <!-- ─── Three.js (3D background) ─────────────────────────── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- ─── GSAP (smooth animations) ─────────────────────────── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-  <!-- ─── Vanilla Tilt.js (3D hover effect on cards) ───────── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
 
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-  <!-- ════════════════════════════════════════════════════════
-       THREE.JS CANVAS — Animated 3D background (rendered here)
-       ════════════════════════════════════════════════════════ -->
   <canvas id="bg-canvas"></canvas>
-
-  <!-- ────────────────────────────────────────────────────────
-       SCAN LINE overlay — purely decorative CRT feel
-       ──────────────────────────────────────────────────────── -->
   <div class="scanlines"></div>
-
-  <!-- ────────────────────────────────────────────────────────
-       CORNER DECORATIONS — HUD / game-UI feel
-       ──────────────────────────────────────────────────────── -->
   <div class="corner corner--tl"></div>
   <div class="corner corner--tr"></div>
   <div class="corner corner--bl"></div>
   <div class="corner corner--br"></div>
 
   <!-- ════════════════════════════════════════════════════════
+       NUCLEAR LAUNCH ANIMATION OVERLAY
+       ════════════════════════════════════════════════════════ -->
+  <div id="launch-overlay" class="launch-overlay" aria-hidden="true">
+    <div class="launch-inner">
+      <!-- Animated ring -->
+      <div class="launch-ring">
+        <svg viewBox="0 0 200 200" class="launch-ring-svg">
+          <circle cx="100" cy="100" r="88" class="ring-track"/>
+          <circle cx="100" cy="100" r="88" class="ring-progress" id="ring-progress"/>
+          <circle cx="100" cy="100" r="60" class="ring-inner"/>
+          <circle cx="100" cy="100" r="42" class="ring-inner-2"/>
+          <!-- Crosshair lines -->
+          <line x1="100" y1="6" x2="100" y2="36" class="ring-tick"/>
+          <line x1="100" y1="164" x2="100" y2="194" class="ring-tick"/>
+          <line x1="6" y1="100" x2="36" y2="100" class="ring-tick"/>
+          <line x1="164" y1="100" x2="194" y2="100" class="ring-tick"/>
+          <!-- Corner ticks -->
+          <line x1="33" y1="33" x2="47" y2="47" class="ring-tick-sm"/>
+          <line x1="167" y1="33" x2="153" y2="47" class="ring-tick-sm"/>
+          <line x1="33" y1="167" x2="47" y2="153" class="ring-tick-sm"/>
+          <line x1="167" y1="167" x2="153" y2="153" class="ring-tick-sm"/>
+        </svg>
+        <div class="launch-icon">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4L28 14H38L30 20L33 31L24 25L15 31L18 20L10 14H20L24 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="24" y1="4" x2="24" y2="10" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="24" y1="38" x2="24" y2="44" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="4" y1="24" x2="10" y2="24" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="38" y1="24" x2="44" y2="24" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Status lines above -->
+      <div class="launch-lines-top">
+        <div class="launch-line" id="ll-1">INITIALIZING SECURE CHANNEL...</div>
+        <div class="launch-line" id="ll-2">AUTHENTICATING ACCESS CREDENTIALS...</div>
+        <div class="launch-line" id="ll-3">DECRYPTING VAULT ENTRY PROTOCOL...</div>
+        <div class="launch-line" id="ll-4">BYPASSING FIREWALL LAYER [3/3]...</div>
+        <div class="launch-line" id="ll-5">INJECTING PAYLOAD SEQUENCE...</div>
+      </div>
+
+      <!-- Code stream (scrolling hex) -->
+      <div class="launch-code-stream" id="launch-code-stream"></div>
+
+      <!-- Big status text -->
+      <div class="launch-status" id="launch-status">DECRYPTING...</div>
+      <div class="launch-pct" id="launch-pct">0%</div>
+
+      <!-- Ready state -->
+      <div class="launch-ready" id="launch-ready">
+        <div class="launch-ready-icon">✓</div>
+        <div class="launch-ready-text">ACCESS GRANTED</div>
+        <div class="launch-ready-sub">OPENING MODULE...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
        PAGE: HOME
        ════════════════════════════════════════════════════════ -->
   <div id="page-home" class="page active">
 
-    <!-- ── TOP HUD BAR ───────────────────────────────────── -->
     <header class="hud-bar">
       <div class="hud-left">
         <span class="hud-label">SYS_ONLINE</span>
         <span class="hud-dot pulse"></span>
       </div>
       <div class="hud-center">
-        <!-- Live clock updates via JS -->
         <span id="live-clock" class="hud-clock">00:00:00</span>
       </div>
       <div class="hud-right">
-        <!-- Public IP fetched via ipify API -->
         <span class="hud-label">IP:&nbsp;</span>
         <span id="user-ip" class="hud-ip">···.···.···.···</span>
       </div>
     </header>
 
-    <!-- ── HERO SECTION ──────────────────────────────────── -->
-    <main class="hero">
+    <!-- ── SEARCH BAR ──────────────────────────────────────── -->
+    <div class="search-zone" id="search-zone">
+      <div class="search-wrapper">
+        <div class="search-input-wrap">
+          <svg class="search-icon-svg" viewBox="0 0 24 24" fill="none" width="16" height="16">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+            <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input
+            type="text"
+            id="search-input"
+            class="search-input"
+            placeholder="SEARCH MODULES..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <span class="search-clear" id="search-clear" aria-label="Clear search">✕</span>
+        </div>
+        <div class="search-results" id="search-results" role="listbox"></div>
+      </div>
+      <div class="search-hint">
+        <span class="search-hint-key">↑↓</span> navigate &nbsp;
+        <span class="search-hint-key">↵</span> open &nbsp;
+        <span class="search-hint-key">ESC</span> close
+      </div>
+    </div>
 
-      <!-- Decorative glitch badge -->
+    <main class="hero">
       <div class="badge" id="hero-badge">
-        <span>EASYHELP</span>
+        <span>TECHVAULT</span>
       </div>
 
-      <!-- Main animated title -->
       <h1 class="hero-title" id="hero-title">
-        <span class="line line-1">TECH</span>
-        <span class="line line-2">VAULT</span>
+        <span class="line line-1">EASY</span>
+        <span class="line line-2">HELP</span>
       </h1>
 
-      <!-- Subtitle -->
       <p class="hero-sub" id="hero-sub">
         Select a knowledge domain to access tutorials
       </p>
 
-      <!-- ── CATEGORY CARDS ─────────────────────────────── -->
-      <!--
-        Each card has:
-          data-category  → key used in script.js tutorial list
-          data-tilt      → enables Vanilla Tilt 3D hover
-      -->
       <div class="cards-grid" id="cards-grid">
 
         <!-- DEVOPS -->
@@ -96,7 +155,6 @@
              data-tilt-max-glare="0.25" data-tilt-scale="1.04">
           <div class="card-inner">
             <div class="card-icon">
-              <!-- SVG: infinity loop / DevOps symbol -->
               <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 32C8 19.85 17.85 10 30 10C36 10 41.4 12.4 45.4 16.4L56 27"
                       stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
@@ -117,7 +175,6 @@
                       stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <!-- Glow blob behind each card -->
             <div class="card-glow"></div>
           </div>
         </div>
@@ -128,7 +185,6 @@
              data-tilt-max-glare="0.25" data-tilt-scale="1.04">
           <div class="card-inner">
             <div class="card-icon">
-              <!-- SVG: network nodes -->
               <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="32" cy="12" r="6" stroke="currentColor" stroke-width="3"/>
                 <circle cx="12" cy="48" r="6" stroke="currentColor" stroke-width="3"/>
@@ -160,7 +216,6 @@
              data-tilt-max-glare="0.25" data-tilt-scale="1.04">
           <div class="card-inner">
             <div class="card-icon">
-              <!-- SVG: shield / lock -->
               <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M32 6L10 16v16c0 13.3 9.3 25.7 22 29 12.7-3.3 22-15.7 22-29V16L32 6z"
                       stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
@@ -182,10 +237,9 @@
           </div>
         </div>
 
-      </div><!-- /cards-grid -->
+      </div>
     </main>
 
-    <!-- ── BOTTOM HUD ────────────────────────────────────── -->
     <footer class="hud-footer">
       <span>TECHVAULT v2.0</span>
       <span class="hud-sep">|</span>
@@ -194,14 +248,13 @@
       <span id="tutorial-count">0 MODULES AVAILABLE</span>
     </footer>
 
-  </div><!-- /#page-home -->
+  </div>
 
   <!-- ════════════════════════════════════════════════════════
-       PAGE: TUTORIALS  (hidden until a category is clicked)
+       PAGE: TUTORIALS
        ════════════════════════════════════════════════════════ -->
   <div id="page-tutorials" class="page">
 
-    <!-- TOP BACK BAR -->
     <header class="hud-bar tut-header">
       <button id="btn-back" class="btn-back">
         <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
@@ -211,7 +264,6 @@
         BACK
       </button>
       <div class="hud-center">
-        <!-- Category name filled by JS -->
         <span id="tut-category-label" class="hud-clock">CATEGORY</span>
       </div>
       <div class="hud-right">
@@ -219,19 +271,15 @@
       </div>
     </header>
 
-    <!-- TUTORIALS GRID — cards injected here by script.js -->
     <section class="tutorials-section">
       <div class="tut-intro">
         <p id="tut-intro-text">Loading tutorials…</p>
       </div>
-      <div class="tut-grid" id="tut-grid">
-        <!-- Tutorial cards are generated dynamically -->
-      </div>
+      <div class="tut-grid" id="tut-grid"></div>
     </section>
 
-  </div><!-- /#page-tutorials -->
+  </div>
 
-  <!-- ─── Main script (must be after HTML) ─────────────────── -->
   <script src="script.js"></script>
 </body>
 </html>
